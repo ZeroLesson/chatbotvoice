@@ -1,0 +1,81 @@
+<!-- templates/record.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Audio</title>
+    <style>
+        #recordButton, #stopButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+        }
+        #audioPlayback {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Record Audio</h1>
+    <button id="recordButton">Hold to Record</button>
+    <button id="stopButton" disabled>Stop Recording</button>
+    <audio id="audioPlayback" controls></audio>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        const recordButton = document.getElementById("recordButton");
+        const stopButton = document.getElementById("stopButton");
+
+        // เริ่มการบันทึกเสียง
+        recordButton.onmousedown = async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                audioChunks = [];
+                const audioUrl = URL.createObjectURL(audioBlob);
+                document.getElementById("audioPlayback").src = audioUrl;
+
+                // ส่งไฟล์เสียงไปยัง Django backend
+                const formData = new FormData();
+                const now = new Date();
+                const formatDateForFileName = (date) => {
+                    return date.toISOString().replace(/:/g, '-'); // ใช้ ISO format และแทนที่ : ด้วย -
+                }
+                
+                // สร้างชื่อไฟล์
+                const fileName = `${formatDateForFileName(now)}.wav`;
+                formData.append('audio', audioBlob, fileName);
+                fetch('/upload-audio/', {
+                    method: 'POST',
+                    body: formData,
+                }).then(response => {
+                    if (response.ok) {
+                        console.log('Audio uploaded successfully!');
+                    } else {
+                        console.error('Error uploading audio');
+                    }
+                });
+            };
+
+            mediaRecorder.start();
+            recordButton.disabled = true;
+            stopButton.disabled = false;
+        };
+
+        // หยุดการบันทึกเสียง
+        stopButton.onclick = () => {
+            mediaRecorder.stop();
+            recordButton.disabled = false;
+            stopButton.disabled = true;
+        };
+    </script>
+</body>
+</html>

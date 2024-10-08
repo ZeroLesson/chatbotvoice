@@ -2,7 +2,10 @@ from django.urls import path
 from myapp import views
 
 urlpatterns = [
-    path('',views.index),
-    path('register',views.register),
-    path('chat', views.chat)
+    path('',views.index,name="login"),
+    path('register',views.register,name="register"),
+    path('chat', views.chat,name="chat"),
+    path('record/', views.record_audio_view, name='record-audio'),
+    path('upload-audio/', views.upload_audio_view, name='upload-audio'),
+
 ]

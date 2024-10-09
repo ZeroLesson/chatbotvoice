@@ -79,14 +79,18 @@ def register(request):
     return render(request, "register.html")
 
 def chat(request):
-    api_url="http://localhost:5217/api/Users"
     token = request.session.get('token')
-    print(token)
-    headers = {
-        "Authorization": f"Bearer {token}"
-    }
-    return render(request, "chat.html")
+    if not token:
+        messages.error(request, f"Please login!!")
+        return redirect("login")
+    else:
+        api_url="http://localhost:5217/api/Users"
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+        return render(request, "chat.html")
 
+   
 def record_audio_view(request):
     return render(request, 'record.html')
 

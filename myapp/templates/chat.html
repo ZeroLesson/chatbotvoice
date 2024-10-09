@@ -11,6 +11,16 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
     {% load static %}
     <link rel="stylesheet" href="{% static 'chat.css' %}">
+    <script>
+        // ฟังก์ชันเพื่อแสดง alert ถ้ามีข้อความใน messages
+        window.onload = function() {
+            {% if messages %}
+                {% for message in messages %}
+                    alert("{{ message }}");
+                {% endfor %}
+            {% endif %}
+        };
+    </script>
 </head>
 
 <body>

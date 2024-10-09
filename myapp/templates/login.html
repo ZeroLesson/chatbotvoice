@@ -13,7 +13,9 @@
         // ฟังก์ชันเพื่อแสดง alert ถ้ามีข้อความใน messages
         window.onload = function() {
             {% if messages %}
-                    alert("Email or password is invalid!");
+                {% for message in messages %}
+                    alert("{{ message }}");
+                {% endfor %}
             {% endif %}
         };
     </script>

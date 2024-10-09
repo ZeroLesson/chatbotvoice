@@ -9,6 +9,14 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'login.css' %}">
     <title>login</title>
+    <script>
+        // ฟังก์ชันเพื่อแสดง alert ถ้ามีข้อความใน messages
+        window.onload = function() {
+            {% if messages %}
+                    alert("Email or password is invalid!");
+            {% endif %}
+        };
+    </script>
 </head>
 
 <body>
@@ -52,7 +60,6 @@
                 </div>
             </div>
         </div>
-    </section>
 </body>
 
 </html>

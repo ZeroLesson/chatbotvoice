@@ -69,7 +69,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'chatbotvoice.wsgi.application'
-
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # เก็บ session ในฐานข้อมูล
+SESSION_COOKIE_SECURE = False  # ควรตั้งเป็น True เมื่อใช้ HTTPS
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

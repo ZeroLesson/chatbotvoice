@@ -1,156 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat System</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous" />
     <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .chat-container {
-            display: flex;
-            height: 100vh;
-        }
-        .chat-list {
-            width: 30%;
-            background-color: #f5edf5;
-            padding: 15px;
-            border-right: 1px solid #ddd;
-            overflow-y: auto;
-        }
-        .chat-list .chat-item {
-            display: flex;
-            align-items: center;
-            padding: 10px 0;
-            cursor: pointer;
-        }
-        .chat-list .chat-item img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-        .chat-list .chat-item .chat-text {
-            flex-grow: 1;
-        }
-        .chat-list .chat-item .time {
-            font-size: 0.8em;
-            color: #999;
-        }
-        .chat-window {
-            width: 70%;
-            display: flex;
-            flex-direction: column;
-        }
-        .chat-header {
-            padding: 20px;
-            background-color: #f5edf5;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #ddd;
-        }
-        .chat-messages {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-            background-color: #fff;
-        }
-        .chat-message {
-            display: flex;
-            margin-bottom: 10px;
-        }
-        .chat-message.sent {
-            justify-content: flex-end;
-        }
-        .chat-message .message-content {
-            background-color: #c7c2d1;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 20px;
-            max-width: 60%;
-        }
-        .chat-footer {
-            padding: 15px;
-            border-top: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            background-color: #f5edf5;
-        }
-        .chat-footer input {
-            flex-grow: 1;
-            margin-right: 10px;
-            padding: 10px;
-            border-radius: 20px;
-            border: 1px solid #ddd;
-        }
-        .chat-footer button {
-            background: none;
-            border: none;
-            font-size: 1.5em;
-            color: #999;
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'chat.css' %}">
 </head>
-<body>
 
+<body>
+    
     <div class="chat-container">
         <!-- Chat List -->
         <div class="chat-list">
-            <div class="chat-item">
+            <div class="chat-item" data-name="Alice" data-last-message="How are you doing?">
                 <img src="https://via.placeholder.com/40" alt="Avatar">
                 <div class="chat-text">
-                    <strong>Name</strong><br>
-                    <span>Supporting line text...</span>
+                    <strong>Alice</strong><br>
+                    <span>How are you doing?</span>
+                </div>
+                <span class="time">5 min</span>
+            </div>
+            <div class="chat-item" data-name="Bob" data-last-message="Let's catch up later.">
+                <img src="https://via.placeholder.com/40" alt="Avatar">
+                <div class="chat-text">
+                    <strong>Bob</strong><br>
+                    <span>Let's catch up later.</span>
                 </div>
                 <span class="time">10 min</span>
             </div>
-            <div class="chat-item">
-                <img src="https://via.placeholder.com/40" alt="Avatar">
-                <div class="chat-text">
-                    <strong>Name</strong><br>
-                    <span>Supporting line text...</span>
-                </div>
-                <span class="time">10 min</span>
-            </div>
-            <!-- Add more chat items as needed -->
         </div>
 
         <!-- Chat Window -->
         <div class="chat-window">
             <!-- Chat Header -->
             <div class="chat-header">
-                <div><strong>Name</strong></div>
+                <div><strong id="chatName">Select a Chat</strong></div>
                 <div>
-                    <button><i class="bi bi-bell"></i></button>
-                    <button><i class="bi bi-gear"></i></button>
+                    <button class="logout"><i class="bi bi-box-arrow-right"></i></button>
                 </div>
             </div>
 
             <!-- Chat Messages -->
-            <div class="chat-messages">
+            <div class="chat-messages" id="chatMessages">
                 <div class="chat-message sent">
-                    <div class="message-content">Or we could make this?</div>
-                </div>
-                <div class="chat-message received">
-                    <div class="message-content">That looks so good!</div>
                 </div>
             </div>
 
             <!-- Chat Footer -->
             <div class="chat-footer">
-                <button><i class="bi bi-plus-circle"></i></button>
-                <button><i class="bi bi-emoji-smile"></i></button>
                 <input type="text" placeholder="Type a message...">
                 <button><i class="bi bi-mic"></i></button>
             </div>
         </div>
     </div>
+
+    <script>
+        // JavaScript to handle click event on chat items
+        document.querySelectorAll('.chat-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const chatName = this.getAttribute('data-name');
+                const lastMessage = this.getAttribute('data-last-message');
+
+                // Update chat header name
+                document.getElementById('chatName').innerText = chatName;
+
+                // Update chat messages with last message
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = `
+                    <div class="chat-message received">
+                        <div class="message-content">${lastMessage}</div>
+                    </div>
+                `;
+            });
+        });
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 

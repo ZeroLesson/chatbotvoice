@@ -43,6 +43,39 @@ def logout(request):
     return redirect("login") 
 
 def register(request):
+    if request.method == "POST":
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        username = request.POST.get("username")
+        
+        # API URL ที่ต้องการเรียกใช้งาน
+        api_url = "http://localhost:5217/api/Users/register"
+        
+        # ข้อมูลที่ส่งไปยัง API
+        data = {
+            "email": email,
+            "password": password,
+            "username": username
+        }
+        
+        try:
+            # ส่ง POST request ไปที่ API
+            response = requests.post(api_url, json=data)
+
+            # ตรวจสอบสถานะการตอบกลับ
+            if response.status_code == 200:
+                # ส่งข้อความ success
+                messages.success(request, response.text)
+                return render(request, "register.html", {"registration_success": True})
+            else:
+                # กรณีเกิดข้อผิดพลาด และแสดงข้อความจาก API
+                messages.error(request, f"Failed to register: {response.text}")
+                return render(request, "register.html")
+        except requests.exceptions.RequestException as e:
+            # จัดการข้อผิดพลาดที่เกิดจากการเชื่อมต่อ เช่น API ล่ม หรือเชื่อมต่อไม่ได้
+            messages.error(request, f"Error occurred: {str(e)}")
+            return render(request, "register.html")
+    
     return render(request, "register.html")
 
 def chat(request):

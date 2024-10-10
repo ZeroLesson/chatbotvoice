@@ -50,14 +50,26 @@
             </ul>
             {% if data %}
             {%for i in data%}
-            <div class="chat-item" data-name="{{ i.user_2.username }}" data-last-message="How are you doing?">
-                <img src="https://via.placeholder.com/40" alt="Avatar">
-                <div class="chat-text">
-                    <strong>{{ i.user_2.username }}</strong><br>
-                    <span>***************</span>
+                {% if i.user_2.id == user_id%}       
+                    <div class="chat-item" data-name="{{ i.user_2.username }}" data-last-message="How are you doing?">
+                        <img src="https://via.placeholder.com/40" alt="Avatar">
+                        <div class="chat-text">
+                            <strong>{{ i.user_1.username }}</strong><br>
+                            <span>***************</span>
+                        </div>
+                        <span class="time">*******</span>
+                    </div>
+                {%else%}
+                <div class="chat-item" data-name="{{ i.user_2.username }}" data-last-message="How are you doing?">
+                    <img src="https://via.placeholder.com/40" alt="Avatar">
+                    <div class="chat-text">
+                        <strong>{{ i.user_2.username }}</strong><br>
+                        <span>***************</span>
+                    </div>
+                    <span class="time">*******</span>
                 </div>
-                <span class="time">*******</span>
-            </div>
+                {%endif%}
+
             {%endfor%}
             {% else %}
             <p>No conversations found.</p>

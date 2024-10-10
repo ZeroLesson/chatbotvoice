@@ -105,10 +105,12 @@ def chat(request):
             result1 = response1.json()
             result2 = response2.json()
             result2 = [item for item in result2 if item['id'] != user_id]
-
-            return render(request, "chat.html", {"data": result1, "user":result2})  # ส่งข้อมูลไปยัง template
-        else:
-            messages.error(request, "Failed to retrieve conversations.")  # แจ้งข้อผิดพลาด
+            for r1_item in result1:
+                if r1_item['user_2']['id'] == user_id:
+                    result2 = [item for item in result2 if item['id'] != r1_item['user_1']['id']]
+                else:
+                    result2 = [item for item in result2 if item['id'] != r1_item['user_2']['id']]
+            return render(request, "chat.html", {"data": result1, "user":result2,"user_id":user_id})  # ส่งข้อมูลไปยัง template
     except requests.exceptions.RequestException as e:
         messages.error(request, f"Error occurred: {str(e)}")  # แจ้งข้อผิดพลาด
         return redirect("login")  # หรือ redirect ไปยังหน้า login หากเกิดข้อผิดพลาด

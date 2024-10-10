@@ -54,14 +54,12 @@ def register(request):
         
         # API URL ที่ต้องการเรียกใช้งาน
         api_url = "http://localhost:5217/api/Users/register"
-        
         # ข้อมูลที่ส่งไปยัง API
         data = {
             "email": email,
             "password": password,
             "username": username
         }
-        
         try:
             # ส่ง POST request ไปที่ API
             response = requests.post(api_url, json=data)
@@ -149,4 +147,16 @@ def upload_audio_view(request):
             for chunk in audio_file.chunks():
                 destination.write(chunk)
         return JsonResponse({'message': 'Audio uploaded successfully!'})
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@csrf_exempt 
+def test_view(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        con_id = data.get('con_id')
+        id_1 = data.get('id_1')
+        id_2 = data.get('id_2')
+        print(con_id,id_1,id_2)
+
+        return JsonResponse({'message': 'successfully!'})
     return JsonResponse({'error': 'Invalid request'}, status=400)

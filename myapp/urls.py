@@ -9,4 +9,5 @@ urlpatterns = [
     path('upload-audio/', views.upload_audio_view, name='upload-audio'),
     path('logout/', views.logout, name='logout'),
     path('add_conversation/', views.add_conversation, name='add_conversation'),
+    path('test/',views.test_view,name='test_view'),
 ]

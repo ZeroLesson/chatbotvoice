@@ -15,19 +15,11 @@
     <script>
         // ฟังก์ชันเพื่อแสดง alert ถ้ามีข้อความใน messages
         window.onload = function() {
-            {
-                %
-                if messages %
-            } {
-                %
-                for message in messages %
-            }
-            alert("{{ message }}");
-            {
-                % endfor %
-            } {
-                % endif %
-            }
+            {% if messages %}
+            {% for message in messages %}
+                alert("{{ message }}");
+            {% endfor %}
+        {% endif %}
         };
     </script>
 </head>
@@ -50,23 +42,23 @@
             </ul>
             {% if data %}
             {%for i in data%}
-                {% if i.user_2.id == user_id%}       
-                    <div class="chat-item" data-name="{{ i.user_2.username }}" data-last-message="How are you doing?">
+                {% if i.user_2.id == user_id %}       
+                    <div class="chat-item" data-name="{{ i.user_1.username }}" data-conid="{{i.conversationId}}" data-ids = "{{user_id}}" data-idr = "{{i.user_1.id}}" data-last-message="How are you doing?">
                         <img src="https://via.placeholder.com/40" alt="Avatar">
                         <div class="chat-text">
                             <strong>{{ i.user_1.username }}</strong><br>
-                            <span>***************</span>
+                            <span>**********</span>
                         </div>
-                        <span class="time">*******</span>
+                        <span class="time" data-timestamp="{{i.lastest_timestamp}}"></span>
                     </div>
                 {%else%}
-                <div class="chat-item" data-name="{{ i.user_2.username }}" data-last-message="How are you doing?">
+                <div class="chat-item" data-name="{{ i.user_2.username }}" data-conid="{{i.conversationId}}" data-ids = "{{user_id}}" data-idr = "{{i.user_2.id}}" data-last-message="How are you doing?">
                     <img src="https://via.placeholder.com/40" alt="Avatar">
                     <div class="chat-text">
                         <strong>{{ i.user_2.username }}</strong><br>
-                        <span>***************</span>
+                        <span>**********</span>
                     </div>
-                    <span class="time">*******</span>
+                    <span class="time" data-timestamp="{{i.lastest_timestamp}}"></span>
                 </div>
                 {%endif%}
 
@@ -106,17 +98,34 @@
             item.addEventListener('click', function() {
                 const chatName = this.getAttribute('data-name');
                 const lastMessage = this.getAttribute('data-last-message');
-
+                const conid = this.getAttribute('data-conid');
+                const ids = this.getAttribute('data-ids');
+                const idr = this.getAttribute('data-idr');
                 // Update chat header name
                 document.getElementById('chatName').innerText = chatName;
-
+                fetch('/test/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'  // ส่ง CSRF token เพื่อความปลอดภัย
+                    },
+                    body: JSON.stringify({ 'con_id': conid,'id_1':ids ,'id_2':idr })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // แสดงผลลัพธ์หรือทำการเปลี่ยนแปลงหลังจากเรียกใช้ add_conversation
+                    console.log('Conversation added', data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
                 // Update chat messages with last message
                 const chatMessages = document.getElementById('chatMessages');
                 chatMessages.innerHTML = `
                     <div class="chat-message received">
                         <div class="message-content">${lastMessage}</div>
                     </div>
-                `;
+                    `;
             });
         });
     </script>
@@ -140,6 +149,7 @@
                 arrow.classList.remove('down'); // หมุนลูกศรกลับ
             }
         }
+
         document.addEventListener('DOMContentLoaded', function() {
             const listItems = document.querySelectorAll('.listn');
     
@@ -147,7 +157,6 @@
             listItems.forEach(function(item) {
                 item.addEventListener('click', function() {
                     const userId = this.getAttribute('data-id');  // ดึงค่า id จาก data-id attribute
-    
                     // ส่ง request ไปยังฟังก์ชัน add_conversation
                     fetch('/add_conversation/', {
                         method: 'POST',
@@ -155,7 +164,7 @@
                             'Content-Type': 'application/json',
                             'X-CSRFToken': '{{ csrf_token }}'  // ส่ง CSRF token เพื่อความปลอดภัย
                         },
-                        body: JSON.stringify({ 'user_id': userId })
+                        body: JSON.stringify({ 'user_id': userId})
                     })
                     .then(response => response.json())
                     .then(data => {
@@ -167,6 +176,47 @@
                     });
                 });
             });
+        });
+        // ฟังก์ชันคำนวณเวลาที่ผ่านไป
+        function timeAgo(timestamp) {
+            const timeNow = new Date(); // เวลาปัจจุบันของระบบ
+        
+            // แปลง timestamp ให้อยู่ในรูปแบบ UTC
+            const dateParts = timestamp.split(/[T:.Z]/);
+            const days = dateParts[0].split("-"); // แยกวันที่และเวลา
+            const year = parseInt(days[0]);
+            const month = parseInt(days[1]) - 1; // เดือนเริ่มจาก 0
+            const day = parseInt(days[2]);
+            const hours = parseInt(dateParts[1]-7);
+            const minutes = parseInt(dateParts[2]);
+            const seconds = parseInt(dateParts[3]);
+
+            const timePast = new Date(Date.UTC(year, month, day, hours, minutes, seconds));
+            // คำนวณเวลาในวินาทีที่ผ่านไป
+            const secondsAgo = Math.floor((timeNow.getTime() - timePast.getTime()) / 1000);
+            
+            if (secondsAgo < 60) return secondsAgo + (secondsAgo === 1 ? " second ago" : " seconds ago");
+        
+            let interval = Math.floor(secondsAgo / 60); // นาที
+            if (interval < 60) return interval + (interval === 1 ? " minute ago" : " minutes ago");
+        
+            interval = Math.floor(interval / 60); // ชั่วโมง
+            if (interval < 24) return interval + (interval === 1 ? " hour ago" : " hours ago");
+        
+            interval = Math.floor(interval / 24); // วัน
+            if (interval < 30) return interval + (interval === 1 ? " day ago" : " days ago");
+        
+            interval = Math.floor(interval / 30); // เดือน
+            if (interval < 12) return interval + (interval === 1 ? " month ago" : " months ago");
+        
+            interval = Math.floor(interval / 12); // ปี
+            return interval + (interval === 1 ? " year ago" : " years ago");
+        }
+        
+        // ใช้ฟังก์ชันนี้กับทุก element ที่มี class 'time'
+        document.querySelectorAll('.time').forEach(function(element) {
+            const timestamp = element.getAttribute('data-timestamp');
+            element.innerText = timeAgo(timestamp);
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"

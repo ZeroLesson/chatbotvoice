@@ -5,6 +5,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 import os
 import requests
+import json
+
 # Create your views here.
 def login(request):
     if request.method == "POST":
@@ -23,8 +25,10 @@ def login(request):
                 if response.status_code == 200:
                     result = response.json()
                     token = result.get("token")
+                    id = result.get("userId")
                     if token:
                         request.session['token'] = token
+                        request.session['userId'] = id
                         return redirect("chat")
                 else:
                     messages.error(request, "Invalid email or password")
@@ -80,17 +84,58 @@ def register(request):
 
 def chat(request):
     token = request.session.get('token')
-    if not token:
-        messages.error(request, f"Please login!!")
-        return redirect("login")
-    else:
-        api_url="http://localhost:5217/api/Users"
-        headers = {
-            "Authorization": f"Bearer {token}"
-        }
-        return render(request, "chat.html")
+    user_id = request.session.get('userId')  # เปลี่ยนชื่อจาก id เป็น user_id เพื่อให้ชัดเจนขึ้น
 
-   
+    # ตรวจสอบว่ามี token หรือไม่
+    if not token:
+        messages.error(request, "Please login!!")
+        return redirect("login")
+
+    # สร้าง API URL สำหรับดึงข้อมูลการสนทนา
+    api_url1 = f"http://localhost:5217/api/Conversation/user/{user_id}"
+    api_url2 = "http://localhost:5217/api/Users"
+    headers = {
+        "Authorization": f"Bearer {token}"  # เพิ่ม Bearer token ใน header
+    }
+    try:
+        response1 = requests.get(api_url1,headers=headers)  # ส่งคำขอ GET
+        response2 = requests.get(api_url2,headers=headers)
+        # ตรวจสอบสถานะการตอบกลับ
+        if response1.status_code == 200:
+            result1 = response1.json()
+            result2 = response2.json()
+            result2 = [item for item in result2 if item['id'] != user_id]
+
+            return render(request, "chat.html", {"data": result1, "user":result2})  # ส่งข้อมูลไปยัง template
+        else:
+            messages.error(request, "Failed to retrieve conversations.")  # แจ้งข้อผิดพลาด
+    except requests.exceptions.RequestException as e:
+        messages.error(request, f"Error occurred: {str(e)}")  # แจ้งข้อผิดพลาด
+        return redirect("login")  # หรือ redirect ไปยังหน้า login หากเกิดข้อผิดพลาด
+    
+@csrf_exempt 
+def add_conversation(request):
+    if request.method == "POST":
+        token = request.session.get('token')
+        user_id1 = request.session.get('userId')
+        data = json.loads(request.body)
+        user_id2 = data.get('user_id')
+        headers = {
+        "Authorization": f"Bearer {token}"  # เพิ่ม Bearer token ใน header
+        }
+        api_url = f"http://localhost:5217/api/Conversation/create?user_1={user_id1}&user_2={user_id2}"
+        try:
+            response = requests.post(api_url,headers=headers)  # ส่งคำขอ GET
+        # ตรวจสอบสถานะการตอบกลับ
+            if response.status_code == 200:
+                return redirect("chat")
+            else:
+                messages.error(request, "Failed to retrieve conversations.")  # แจ้งข้อผิดพลาด
+                return redirect("chat")
+        except requests.exceptions.RequestException as e:
+            messages.error(request, f"Error occurred: {str(e)}")  # แจ้งข้อผิ
+            return redirect("chat")
+    
 def record_audio_view(request):
     return render(request, 'record.html')
 

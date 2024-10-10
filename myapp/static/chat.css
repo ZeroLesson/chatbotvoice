@@ -106,3 +106,42 @@ body {
 .logout:Hover{
     background-color: rgb(240, 157, 171);
 }
+
+.chat-list .conver{
+    margin: 10px;
+}
+.chat-list .conver:Hover{
+    background-color: rgb(0, 211, 0);
+}
+
+.hidden-list {
+    display: none;
+    list-style-type: none;
+    padding-left: 20px;
+}
+
+/* สไตล์สำหรับลูกศร */
+.arrow {
+    cursor: pointer;
+    display: inline-block;
+    transition: transform 0.3s;
+}
+
+/* เมื่อคลิกให้หมุนลูกศร */
+.arrow.down {
+    transform: rotate(90deg);
+}
+
+.title {
+    cursor: pointer;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.listn{
+    padding-left: 20px
+}
+.listn:Hover{
+    background-color: rgb(240, 157, 171);
+    
+}

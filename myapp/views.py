@@ -1,6 +1,6 @@
 from django.shortcuts import render,redirect
 from django.http import HttpResponse
-from django.http import JsonResponse
+from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 import os
@@ -142,21 +142,137 @@ def record_audio_view(request):
 @csrf_exempt  # ปิด CSRF protection สำหรับการทดสอบ (ไม่แนะนำใน production)
 def upload_audio_view(request):
     if request.method == 'POST':
-        audio_file = request.FILES['audio']
-        with open(os.path.join('media', audio_file.name), 'wb+') as destination:
-            for chunk in audio_file.chunks():
-                destination.write(chunk)
-        return JsonResponse({'message': 'Audio uploaded successfully!'})
+        token = request.session.get('token')
+        headers = {
+            "Authorization": f"Bearer {token}"  # เพิ่ม Bearer token ใน header
+        }
+
+        # ตรวจสอบการส่งข้อมูล ID มาพร้อมกันใน request
+        conid = request.session.get('conid')
+        id1 = request.session.get('id1')
+        id2 = request.session.get('id2')
+
+        if 'audio' in request.FILES:  # ตรวจสอบว่ามีไฟล์ audio ถูกส่งมาหรือไม่
+            audio_file = request.FILES['audio']
+            file_path = os.path.join('media', audio_file.name)
+
+            # ตรวจสอบโฟลเดอร์ media ว่ามีอยู่หรือไม่ ถ้าไม่มีให้สร้างขึ้นมา
+            if not os.path.exists('media'):
+                os.makedirs('media')
+
+            try:
+                # บันทึกไฟล์เสียงลงในระบบไฟล์ของคุณ
+                with open(file_path, 'wb+') as destination:
+                    for chunk in audio_file.chunks():
+                        destination.write(chunk)
+
+                # ตรวจสอบว่าไฟล์ถูกบันทึกเรียบร้อย
+                if not os.path.exists(file_path):
+                    return JsonResponse({'error': 'File not saved correctly'}, status=500)
+
+                # เตรียมข้อมูลที่จะส่งไปยัง API อื่น
+                api_url = 'http://localhost:5217/api/Messages/create/'
+
+                # ข้อมูล data ที่ต้องการส่งไปพร้อมไฟล์
+                data = {
+                    "conversation_id": conid,  # รับค่าจาก POST request
+                    "sender_id": id1,  # รับค่าจาก POST request
+                    "receiver_id": id2,  # รับค่าจาก POST request
+                }
+
+                # เตรียมไฟล์เสียงสำหรับการส่ง
+                files = {'audioFile': (audio_file.name, open(file_path, 'rb'), audio_file.content_type)}
+
+                # ส่งไฟล์เสียงพร้อมกับข้อมูลไปยัง API อื่นด้วย requests
+                response = requests.post(api_url, data=data, files=files, headers=headers)
+
+                # ตรวจสอบผลลัพธ์จาก API อื่น
+                if response.status_code == 200:
+                    return JsonResponse({'message': 'Audio uploaded successfully and sent to API!'})
+                else:
+                    return JsonResponse({'error': f'Failed to send audio to API: {response.text}'}, status=response.status_code)
+
+            except Exception as e:
+                return JsonResponse({'error': f'Error occurred while processing the file: {str(e)}'}, status=500)
+
+        else:
+            return JsonResponse({'error': 'No audio file provided'}, status=400)
+
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 @csrf_exempt 
 def test_view(request):
     if request.method == "POST":
+        token = request.session.get('token')
+        headers = {
+            "Authorization": f"Bearer {token}"  # เพิ่ม Bearer token ใน header
+        }
         data = json.loads(request.body)
         con_id = data.get('con_id')
         id_1 = data.get('id_1')
         id_2 = data.get('id_2')
-        print(con_id,id_1,id_2)
+        request.session['conid'] = con_id
+        request.session['id1'] = id_1
+        request.session['id2'] = id_2
+        
+        # ดึงข้อมูลจาก API
+        api_url = f'http://localhost:5217/api/Messages/get-all-by-conversation-id/{con_id}'
+        api_url2 = "http://localhost:5217/api/Users"
+        response = requests.get(api_url, headers=headers)
+        response2 = requests.get(api_url2,headers=headers)
+        
+        try:
+            api_data = response.json()  # พยายามแปลง response เป็น JSON
+            user_data = response2.json()
+            data = {
+                'status': 'success',
+                'message': 'Data processed successfully!',
+                'apidata': api_data,
+                'userdata': user_data,
+            }
+            return JsonResponse(data)
+        except ValueError:
+            # ถ้าแปลง JSON ไม่สำเร็จ
+            return JsonResponse({'error': 'Failed to parse JSON from API response', 'raw_response': response.text}, status=500)
 
-        return JsonResponse({'message': 'successfully!'})
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+def get_decrypted_audio(request):
+    if request.method == 'POST':
+        try:
+            token = request.session.get('token')
+            headers = {
+                "Authorization": f"Bearer {token}"  # เพิ่ม Bearer token ใน header
+            }
+            data = json.loads(request.body)
+            voice_path = data.get('voice_path')
+            print(f"Received voice_path: {voice_path}")  # ดูว่าได้รับ voice_path มาหรือไม่
+            
+            if not voice_path:
+                return JsonResponse({'error': 'No voice_path provided'}, status=400)
+            
+            api_url = f'http://localhost:5217/api/Messages/get-audio?voice_path={voice_path}'
+            
+            print(f"Requesting decrypted audio for: {voice_path}")
+            response = requests.get(api_url, stream=True, headers=headers)
+            
+            if response.status_code == 200:
+                print(f"Successfully received audio for {voice_path}")
+                http_response = StreamingHttpResponse(
+                    streaming_content=(chunk for chunk in response.iter_content(chunk_size=8192)),
+                    content_type='audio/m4a'
+                )
+                http_response['Content-Disposition'] = f'inline; filename="{voice_path}.m4a"'
+                return http_response
+            else:
+                error_message = f"Failed to retrieve file from API: {response.text}"
+                print(error_message)
+                return JsonResponse({'error': error_message}, status=response.status_code)
+
+        except Exception as e:
+            error_message = f"An error occurred while processing the request: {str(e)}"
+            print(error_message)
+            return JsonResponse({'error': error_message}, status=500)
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+

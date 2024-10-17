@@ -10,4 +10,5 @@ urlpatterns = [
     path('logout/', views.logout, name='logout'),
     path('add_conversation/', views.add_conversation, name='add_conversation'),
     path('test/',views.test_view,name='test_view'),
+    path('getaudio/',views.get_decrypted_audio ,name='get_decrypted_audio'),
 ]

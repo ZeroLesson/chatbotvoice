@@ -33,7 +33,7 @@
             {% comment %} <button class="conver"><i class="bi bi-plus-circle"></i></button> {% endcomment %}
             <div class="arrow-container" id="toggleButton">
                 <span class="arrow">&#9654;</span> <!-- ลูกศรที่ใช้ -->
-                <span class="title">Click to Show/Hide List</span>
+                <span class="title">Click to Add New Conversation</span>
             </div>
             <ul id="toggleList" class="hidden-list">
                 {%for i in user%}
@@ -58,7 +58,7 @@
                 <img src="https://via.placeholder.com/40" alt="Avatar">
                 <div class="chat-text">
                     <strong>{{ i.user_2.username }}</strong><br>
-                    <span>**********</span>
+                    <!-- <span>**********</span> -->
                 </div>
                 <span class="time" data-timestamp="{{i.lastest_timestamp}}"></span>
             </div>
@@ -76,7 +76,7 @@
             <div class="chat-header">
                 <div><strong id="chatName">Select a Chat</strong></div>
                 <div>
-                    <button class="logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i></button>
+                    <button class="logout" onclick="logout()">Logout <i class="bi bi-box-arrow-right"></i></button>
                 </div>
             </div>
 
@@ -208,7 +208,7 @@
                     chatMessages.innerHTML = '';  // Clear previous messages
 
                     // Sort the messages by timestamp
-                    data.apidata.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    // data.apidata.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                     console.log(data.apidata);
                     // Function to get the username from the user data by matching the sender_id
                     const findUsername = (senderId) => {
@@ -263,6 +263,8 @@
                         const audioElement = document.createElement('audio');
                         audioElement.controls = true;
                         audioElement.src = audioUrl;
+                        audioElement.controlsList = "nodownload";
+                        audioElement.preload = "none"
 
                         // Add the audio element to the message div
                         messageDiv.appendChild(audioElement);
@@ -323,6 +325,9 @@
                     }).then(response => {
                         if (response.ok) {
                             console.log('Audio uploaded successfully!');
+                            setTimeout(() => {
+                                location.reload();  // ลองทดสอบคำสั่ง location.reload() แยกต่างหาก
+                            }, 0);
                         } else {
                             console.error('Error uploading audio');
                         }

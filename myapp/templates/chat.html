@@ -14,11 +14,11 @@
     <link rel="stylesheet" href="{% static 'chat.css' %}">
     <script>
         // ฟังก์ชันเพื่อแสดง alert ถ้ามีข้อความใน messages
-        window.onload = function () {
+        window.onload = function() {
             {% if messages %}
-            {% for message in messages %}
-            alert("{{ message }}");
-            {% endfor %}
+                {% for message in messages %}
+                    alert("{{ message }}");
+                {% endfor %}
             {% endif %}
         };
     </script>
@@ -186,12 +186,16 @@
                 const conid = this.getAttribute('data-conid');
                 const ids = this.getAttribute('data-ids');  // user ID of the current session user
                 const idr = this.getAttribute('data-idr');
-
+        
                 // Update the chat header name
                 document.getElementById('chatName').innerText = chatName;
-
-                // Send a request to the API to get the chat data
+        
+                // Clear existing messages before fetching new data
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = '';  // Clear previous messages
+        
                 try {
+                    // Send a request to the API to get the chat data
                     const response = await fetch('/test/', {
                         method: 'POST',
                         headers: {
@@ -200,34 +204,39 @@
                         },
                         body: JSON.stringify({ 'con_id': conid, 'id_1': ids, 'id_2': idr })
                     });
-
+        
+                    // Check if the response is successful
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.error('Error fetching chat data:', errorData);
+                        alert('Session Token หมดอายุ!!');
+                        window.location.href = '';
+                        return;  // Exit the function if there's an error
+                    }
+        
                     const data = await response.json();
-
-                    // Clear the existing messages
-                    const chatMessages = document.getElementById('chatMessages');
-                    chatMessages.innerHTML = '';  // Clear previous messages
-
-                    // Sort the messages by timestamp
-                    // data.apidata.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                    console.log(data.apidata);
+        
+                    // Sort the messages by timestamp (if needed)
+                    data.apidata.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        
                     // Function to get the username from the user data by matching the sender_id
                     const findUsername = (senderId) => {
                         const user = data.userdata.find(user => user.id === senderId);
                         return user ? user.username : 'Unknown';  // Default to 'Unknown' if no match found
                     };
-
+        
                     // Loop through data.apidata and create elements for each message
                     for (const message of data.apidata) {
                         // Main container for each message
                         const messageContainerDiv = document.createElement('div');
                         messageContainerDiv.classList.add('message-container');
-
+        
                         // Div for the username
                         const usernameDiv = document.createElement('div');
-
+        
                         // Div for the message content (audio)
                         const messageDiv = document.createElement('div');
-
+        
                         // Check if the message was sent by the current user (session user)
                         if (message.sender_id === ids) {
                             messageDiv.classList.add('chat-message', 'sent');  // Sent message (align left)
@@ -236,17 +245,18 @@
                             messageDiv.classList.add('chat-message', 'received');  // Received message (align right)
                             usernameDiv.classList.add('username-right');  // Align username to the right
                         }
-
+        
                         // Get the username of the sender
                         const username = findUsername(message.sender_id);
-
+        
                         // Create a strong element for the username
                         const usernameElement = document.createElement('strong');
                         usernameElement.textContent = username;  // Set the sender's username
                         usernameDiv.appendChild(usernameElement);  // Add the username to the div
-
+        
                         const encodedVoicePath = encodeURIComponent(message.voice_path);
-
+        
+                        // Fetch audio data for the message
                         const audioResponse = await fetch('/getaudio/', {
                             method: 'POST',
                             headers: {
@@ -255,31 +265,38 @@
                             },
                             body: JSON.stringify({ 'voice_path': encodedVoicePath })
                         });
-
+        
+                        if (!audioResponse.ok) {
+                            console.error('Error fetching audio data:', await audioResponse.json());
+                            continue;  // Skip to the next message if there's an error
+                        }
+        
                         const blob = await audioResponse.blob();
-
+        
                         // Create a URL object for the decoded audio file
                         const audioUrl = URL.createObjectURL(blob);
                         const audioElement = document.createElement('audio');
                         audioElement.controls = true;
                         audioElement.src = audioUrl;
                         audioElement.controlsList = "nodownload";
-                        audioElement.preload = "none"
-
+                        audioElement.preload = "none";
+        
                         // Add the audio element to the message div
                         messageDiv.appendChild(audioElement);
-
+        
                         // Add the username and message divs to the container
                         messageContainerDiv.appendChild(usernameDiv);
                         messageContainerDiv.appendChild(messageDiv);
-
+        
                         // Append the message container to the chatMessages
                         chatMessages.appendChild(messageContainerDiv);
                     }
+        
+                    scrollToBottom();  // Scroll to the bottom after appending all messages
+        
                 } catch (error) {
-                    console.error('Error:', error);
+                    console.error('Unexpected error:', error);
                 }
-                scrollToBottom();
             });
         });
 

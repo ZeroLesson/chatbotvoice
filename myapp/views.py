@@ -125,6 +125,9 @@ def chat(request):
                 else:
                     result2 = [item for item in result2 if item['id'] != r1_item['user_2']['id']]
             return render(request, "chat.html", {"data": result1, "user":result2,"user_id":user_id})  # ส่งข้อมูลไปยัง template
+        elif response1.status_code == 401:
+            request.session.flush()  # หรือลบแค่ token: request.session.pop('token', None)
+            return redirect("login") 
     except requests.exceptions.RequestException as e:
         messages.error(request, f"Error occurred: {str(e)}")  # แจ้งข้อผิดพลาด
         return redirect("login")  # หรือ redirect ไปยังหน้า login หากเกิดข้อผิดพลาด
@@ -145,6 +148,8 @@ def add_conversation(request):
         # ตรวจสอบสถานะการตอบกลับ
             if response.status_code == 200:
                 return redirect("chat")
+            elif response.status_code == 500:
+                logout()
             else:
                 messages.error(request, "Failed to retrieve conversations.")  # แจ้งข้อผิดพลาด
                 return redirect("chat")
@@ -246,6 +251,7 @@ def test_view(request):
                 'apidata': api_data,
                 'userdata': user_data,
             }
+
             return JsonResponse(data)
         except ValueError:
             # ถ้าแปลง JSON ไม่สำเร็จ

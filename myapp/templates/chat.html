@@ -217,7 +217,7 @@
                     const data = await response.json();
         
                     // Sort the messages by timestamp (if needed)
-                    data.apidata.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    // data.apidata.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         
                     // Function to get the username from the user data by matching the sender_id
                     const findUsername = (senderId) => {

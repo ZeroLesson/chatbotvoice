@@ -21,18 +21,34 @@ def login(request):
             }
             try:
                 response = requests.post(api_url, json=headers)
-
+                result = response.json()
                 if response.status_code == 200:
-                    result = response.json()
+                    
                     token = result.get("token")
                     id = result.get("userId")
                     if token:
                         request.session['token'] = token
                         request.session['userId'] = id
                         return redirect("chat")
-                else:
-                    messages.error(request, "Invalid email or password")
+                elif response.status_code == 401:
+                    time = result.get('remainingAttempts')
+                    if time <=3:
+                        messages.error(request, "Invalid email or password "+str(time))
+                        return redirect("login")
+                    else:
+                        messages.error(request, "Invalid email or password")
+                        return redirect("login")
+                elif response.status_code == 404:
+                    messages.error(request, "email not found!!")
                     return redirect("login")
+                elif response.status_code == 409:
+                    time = int(result.get('remainingTime'))
+                    if time > 1:
+                        messages.error(request, "You have attempted to log in too many times. Please try again in "+ str(time) +" minutes. ")
+                        return redirect("login")
+                    else:
+                        messages.error(request, "You have attempted to log in too many times. Please try again in "+ str(time) +" minute. ")
+                        return redirect("login")
             except requests.exceptions.RequestException as e:
                 messages.error(request, f"Error occurred: {str(e)}")
                 return redirect("login")
